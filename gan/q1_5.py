@@ -14,28 +14,18 @@ def compute_discriminator_loss(
     TODO 1.5.1: Implement WGAN-GP loss for discriminator.
     loss = E[D(fake_data)] - E[D(real_data)] + lambda * E[(|| grad wrt interpolated_data (D(interpolated_data))|| - 1)^2]
     """
-    ##################################################################
-    # TODO 1.5: Implement WGAN-GP loss for discriminator.
-    # loss_pt1 = E[D(fake_data)] - E[D(real_data)]
-    # loss_pt2 = lambda * E[(|| grad wrt interpolated_data (D(interpolated_data))|| - 1)^2]
-    # loss = loss_pt1 + loss_pt2
-    ##################################################################
-    loss = None
-    ##################################################################
-    #                          END OF YOUR CODE                      #
-    ##################################################################
+    loss = torch.mean(discrim_fake) - torch.mean(discrim_real) + lamb * torch.mean(
+        (torch.norm(discrim_interp, dim=1) - 1) ** 2
+    )
     return loss
 
 
 def compute_generator_loss(discrim_fake):
-    ##################################################################
-    # TODO 1.5: Implement WGAN-GP loss for generator.
-    # loss = - E[D(fake_data)]
-    ##################################################################
-    loss = None
-    ##################################################################
-    #                          END OF YOUR CODE                      #
-    ##################################################################
+    """
+    TODO 1.5.1: Implement WGAN-GP loss for generator.
+    loss = - E[D(fake_data)]
+    """
+    loss = -torch.mean(discrim_fake)
     return loss
 
 
@@ -46,6 +36,7 @@ if __name__ == "__main__":
     prefix = "data_wgan_gp/"
     os.makedirs(prefix, exist_ok=True)
 
+    # TODO 1.5.2: Run this line of code.
     train_model(
         gen,
         disc,

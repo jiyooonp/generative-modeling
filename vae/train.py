@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.utils.data as data
 import torch.optim as optim
-from model import AEModel
+from model import AEModel, VAEEncoder
 from torchvision import datasets, transforms
 import torch.nn.functional as F
 from torchvision.utils import make_grid
@@ -15,13 +15,13 @@ import os
 from utils import *
 
 def ae_loss(model, x):
-    ##################################################################
-    # TODO 2.2: Fill in MSE loss between x and its reconstruction.
-    ##################################################################
-    loss = None
-    ##################################################################
-    #                          END OF YOUR CODE                      #
-    ##################################################################
+    """
+    TODO 2.2: fill in MSE loss between x and its reconstruction.
+    return loss, {recon_loss = loss}
+    """
+    output = model.encoder(x)
+    output = model.decoder(output)
+    loss = F.mse_loss(output, x) * x.shape[1] * x.shape[2] * x.shape[3]
 
     return loss, OrderedDict(recon_loss=loss)
 
@@ -32,18 +32,20 @@ def vae_loss(model, x, beta = 1):
     (https://stats.stackexchange.com/questions/318748/deriving-the-kl-divergence-loss-for-vaes).
     return loss, {recon_loss = loss}
     """
-    ##################################################################
-    # TODO 2.5: Fill in recon_loss and kl_loss.
-    # NOTE: For the kl loss term for the VAE, implement the loss in
-    # closed form, you can find the formula here:
-    # (https://stats.stackexchange.com/questions/318748/deriving-the-kl-divergence-loss-for-vaes).
-    ##################################################################
-    total_loss = None
-    recon_loss = None
-    kl_loss = None
-    ##################################################################
-    #                          END OF YOUR CODE                      #
-    ##################################################################
+    # model is VAEEncoder
+    # import pdb; pdb.set_trace()
+    mu, log_std = model.encoder(x)
+    std = torch.exp(log_std)
+    eps = torch.randn_like(std)
+    z = mu + eps * std
+    kl_loss = 0.5 * (torch.sum(torch.square(mu)) + torch.sum(torch.square(std)) - torch.sum(torch.log(torch.square(std)) + 1)) / x.shape[0]
+
+    output = model.decoder(z)
+    # import ipdb; ipdb.set_trace()
+    recon_loss = torch.mean(torch.square(output - x)) * x.shape[1] * x.shape[2] * x.shape[3]
+
+    total_loss = recon_loss + beta * kl_loss
+
     return total_loss, OrderedDict(recon_loss=recon_loss, kl_loss=kl_loss)
 
 
@@ -53,15 +55,12 @@ def constant_beta_scheduler(target_val = 1):
     return _helper
 
 def linear_beta_scheduler(max_epochs=None, target_val = 1):
-    ##################################################################
-    # TODO 2.8: Fill in helper. The value returned should increase
-    # linearly from 0 at epoch 0 to target_val at epoch max_epochs.
-    ##################################################################
+    """
+    TODO 2.8 : Fill in helper. The value returned should increase linearly
+    from 0 at epoch 0 to target_val at epoch max_epochs
+    """
     def _helper(epoch):
-        pass
-    ##################################################################
-    #                          END OF YOUR CODE                      #
-    ##################################################################
+        return np.arange(0, target_val+1/max_epochs, 1/max_epochs)
     return _helper
 
 def run_train_epoch(model, loss_mode, train_loader, optimizer, beta = 1, grad_clip = 1):
@@ -136,7 +135,7 @@ def main(log_dir, loss_mode = 'vae', beta_mode = 'constant', num_epochs = 20, ba
                 vis_samples(model, 'data/'+log_dir+ '/epoch_'+str(epoch) )
     for k,v in plot_metrics.items():
         plt.clf()
-        save_plot(list(range(len(v))), v, "Epochs", k, f"{k} vs. Epochs", 'data/' + log_dir + f'/{k}_vs_iterations')
+        save_plot(list(range(len(v))), v, "Epochs", k, "{k} vs. Epochs", 'data/' + log_dir + f'/{k}_vs_iterations')
 
 if __name__ == '__main__':
     # argparser:

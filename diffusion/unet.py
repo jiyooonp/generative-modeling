@@ -7,6 +7,7 @@ import torch
 from torch import nn, einsum
 import torch.nn.functional as F
 
+import ipdb
 
 # helpers functions
 def exists(x):
@@ -85,6 +86,7 @@ class SinusoidalPosEmb(nn.Module):
         half_dim = self.dim // 2
         emb = math.log(10000) / (half_dim - 1)
         emb = torch.exp(torch.arange(half_dim, device=device) * -emb)
+        ipdb.set_trace()
         emb = x[:, None] * emb[None, :]
         emb = torch.cat((emb.sin(), emb.cos()), dim=-1)
         return emb
